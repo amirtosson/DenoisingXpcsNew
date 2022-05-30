@@ -31,8 +31,8 @@ class DataGenerator:
                                              gamma_min=0,
                                              constant_max=1,
                                              constant_min=0,
-                                             noise_factor_max=2,
-                                             noise_factor_min=6,
+                                             noise_factor_max=6,
+                                             noise_factor_min=3,
                                              save_data=False,
                                              file_name="data_set",
                                              visualize_data=True,
@@ -68,6 +68,7 @@ class DataGenerator:
                 axes[0].set_title('Noisy waveform')
                 axes[1].plot(all_pure[random_index])
                 axes[1].set_title('Pure waveform')
+                plt.savefig("./Images/Simulated_data_sample_"+str(i)+'.png', format='png', dpi=600)
                 plt.show()
         if save_data:
             now = datetime.now()
@@ -77,6 +78,77 @@ class DataGenerator:
             np.save('./Datasets/' + file_name + '_pure_' + str(self.TIME_POINTS) + '_' + str(num_random_sets) + '_'
                     + str(num_samples) + '_' + data_set_version, all_pure)
         return all_noise, all_pure
+
+
+    def generate_noise_on_input_data(self, input_data=[], noise_factor=4, sample_num=1,visualize_data=True):
+        
+        noise_data = []
+        pure_data = []
+
+        for _ in range(sample_num):
+            number_images = np.linspace(15, 10, self.TIME_POINTS)
+            noise = np.random.normal(0, 0.11, input_data.shape)
+            g2_noisy = input_data + noise_factor * noise 
+            pure_data.append(input_data)
+            noise_data.append(g2_noisy)
+            
+        if visualize_data:
+            for i in range(0, 10):
+                random_index = np.random.randint(0, len(noise_data) - 1)
+                fig, axes = plt.subplots(1, 2)
+                axes[0].plot(pure_data[random_index])
+                axes[0].set_title('Pure waveform')
+                axes[1].plot(noise_data[random_index])
+                axes[1].set_title('Noisy waveform')
+                plt.savefig("./Images/Exp_Data_Simulated_Noise_Factor_"+ str(noise_factor)+"_sample_"+str(i)+'.png', format='png', dpi=600)
+
+                plt.show()
+        return np.array(noise_data), np.array(pure_data)
+
+
+    def generate_dataset_no_randomness(self, 
+                                       num_sample,
+                                        beta,
+                                        gamma,
+                                        c,
+                                        noise_factor,
+                                        save_data=False,
+                                        file_name="data_set",
+                                        visualize_data=True,
+                                        num_samples_visualize=4):
+        all_noise = []
+        all_pure = []
+        with tq.tqdm(total=num_sample) as pbar:
+            all_pure, all_noise = self.__generate_datasets(num_sample,
+                                                             beta,
+                                                             gamma,
+                                                             c,
+                                                             noise_factor,
+                                                             pbar)
+        
+        
+        all_noise, all_pure = np.array(all_noise), np.array(all_pure)
+
+        if visualize_data:
+            for i in range(0, num_samples_visualize):
+                random_index = np.random.randint(0, len(all_noise) - 1)
+                fig, axes = plt.subplots(1, 2)
+                # Plot sample and reconstruciton
+                axes[0].plot(all_pure[random_index])
+                axes[0].set_title('Pure waveform')
+                axes[1].plot(all_noise[random_index])
+                axes[1].set_title('Noisy waveform')
+                plt.savefig("./Images/Simulated_data_Noise_Factor_"+ str(noise_factor)+"_sample_"+str(i)+'.png', format='png', dpi=600)
+                plt.show()
+        if save_data:
+            now = datetime.now()
+            data_set_version = str(now.day) + "_" + str(now.month) + "_" + str(now.hour) + "_" + str(now.minute)
+            np.save('./Datasets/' + file_name + '_noise_' + str(self.TIME_POINTS) + '_norandom' 
+                    + str(num_sample) + '_' + data_set_version, all_noise)
+            np.save('./Datasets/' + file_name + '_pure_' + str(self.TIME_POINTS) + '_norandom'
+                    + str(num_sample) + '_' + data_set_version, all_pure)
+        return all_noise, all_pure
+
 
     def __generate_datasets(self,
                             num_sample,
@@ -91,11 +163,12 @@ class DataGenerator:
             pbar.update(1)
             g2_pure = c + beta * np.exp(-(gamma * self.TIME_DATA))
             pure_data.append(g2_pure)
-            number_images = np.linspace(150, 10, self.TIME_POINTS)
+            number_images = np.linspace(100, 10, self.TIME_POINTS)
             noise = np.random.normal(0, 1, g2_pure.shape)
             g2_noisy = g2_pure + noise_factor * noise / (number_images + 0)
             noise_data.append(g2_noisy)
         return np.array(pure_data), np.array(noise_data)
+    
 
     def generate_test_dataset(self, c, beta, gamma, noise_factor):
         g2_pure = c + beta * np.exp(-(gamma * self.TIME_DATA))
