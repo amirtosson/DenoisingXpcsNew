@@ -234,7 +234,7 @@ class TTCCNN:
         #l_model = models.load_model('./Models/TTC_models/' + model_name)
         #l_model.summary()
         #input_data = input_data / np.max(input_data)
-        input_data = (input_data - np.min(input_data)) / (np.max(input_data) - np.min(input_data))
+        #input_data = (input_data - np.min(input_data)) / (np.max(input_data) - np.min(input_data))
 
         input_data_r = input_data.reshape(1, input_size, input_size, 1)
         reconstructed_image = l_model.predict(input_data_r)

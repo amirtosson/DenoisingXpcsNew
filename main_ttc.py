@@ -13,6 +13,39 @@ from scipy.ndimage import gaussian_filter
 import numpy as np
 import matplotlib.pyplot as plt
 
+data_test = np.load('./TESTDATA/ttc_q1_series3.npy')
+
+# Get the original shape of the data
+original_shape = data_test.shape
+if original_shape[0] > 100 or original_shape[1] > 100:
+    print("Resizing data to 100x100")
+    data_test_resized = data_test[0:100,0:100]
+else:
+    data_test_resized = data_test
+# Create a new array with the desired shape, filled with zeros (or any other padding value)
+#padded_data_test = np.zeros((100, 100))
+
+# Copy the original data into the new array
+#padded_data_test[:original_shape[0], :original_shape[1]] = data_test
+#data_test = padded_data_test
+
+
+plt.imshow(data_test,origin='lower')
+plt.show()
+
+plt.imshow(data_test_resized,origin='lower')
+plt.show()
+model_name = "CNN_TTC_ks5325_linear_huber_loss_1321115_training_set_125000"
+
+ttc_cnn = TTCCNN()
+C_denoised = ttc_cnn.test_model("model_"+model_name, 100, data_test_resized)
+
+fig, ax = plt.subplots()
+ax.imshow(C_denoised[0:50,0:50], origin='lower')
+plt.show()
+
+# Save the denoised image
+fig.savefig('denoised_image_mora.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
 
 
 # # Parameters
@@ -295,7 +328,7 @@ cnn_model = ttc_cnn.build_model(input_shape=(100,100,1))
 history, model_name = ttc_cnn.fit_model(cnn_model, ttc_input_data, ttc_output_data, 15, 32, 0.2, save_model=True)
 
 
-idx = 10
+idx = 1
 test_data = ttc_input_data[idx]  
 
 #test_data = inp[1]  
@@ -394,7 +427,7 @@ def calculate_snr(pure_ttc, denoised_ttc, noisy_ttc):
 
     return snr
 
-outo, ino =  ttc_dg.new_data_set_generator(1,30)
+outo, ino =  ttc_dg.new_data_set_generator(1,40)
 
 snr_gs = []
 

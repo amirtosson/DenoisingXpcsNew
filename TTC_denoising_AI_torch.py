@@ -7,10 +7,19 @@ from torchvision.transforms import ToTensor
 from datetime import datetime
 from torchsummary import summary
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using device: {device}")
+if torch.cuda.is_available():
+    print("CUDA is available. PyTorch can use the GPU.")
+    print(f"Number of GPUs available: {torch.cuda.device_count()}")
+    print(f"Current GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available. PyTorch will use the CPU.")
 class TTCCNN(nn.Module):
     def __init__(self):
         super(TTCCNN, self).__init__()
+        self.device = device
+        print(f"Using device: {self.device}")
         
     def build_model(self):
         print("building model")
@@ -58,6 +67,8 @@ class TTCCNN(nn.Module):
             model.train()
             for batch in train_loader:
                 inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
                 optimizer.zero_grad()
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
@@ -70,6 +81,8 @@ class TTCCNN(nn.Module):
             with torch.no_grad():
                 for batch in val_loader:
                     inputs, targets = batch
+                    inputs = inputs.to(self.device)
+                    targets = targets.to(self.device)
                     outputs = model(inputs)
                     loss = criterion(outputs, targets)
                     val_loss += loss.item()
