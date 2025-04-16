@@ -13,6 +13,9 @@ from scipy.ndimage import gaussian_filter
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+
+
 data_test = np.load('./TESTDATA/ttc_q1_series3.npy')
 
 # Get the original shape of the data
@@ -317,12 +320,199 @@ from scipy.ndimage import gaussian_filter
 
 
 
+def normalized_cross_correlation(img1, img2):
+    """
+    Compute the Normalized Cross-Correlation (NCC) between two 2D arrays.
+
+    Parameters:
+    img1, img2: np.ndarray
+        Input images (must be the same shape).
+
+    Returns:
+    float
+        NCC value between -1 and 1.
+    """
+    if img1.shape != img2.shape:
+        raise ValueError("Input images must have the same shape.")
+
+    img1_mean = np.mean(img1)
+    img2_mean = np.mean(img2)
+
+    numerator = np.sum((img1 - img1_mean) * (img2 - img2_mean))
+    denominator = np.sqrt(np.sum((img1 - img1_mean) ** 2) * np.sum((img2 - img2_mean) ** 2))
+
+    if denominator == 0:
+        return 0  # avoid division by zero
+
+    return numerator / denominator
+
     
     
-ttc_dg = TTCDataGenerator()    
+ttc_dg = TTCDataGenerator()   
 #ttc_output_data, ttc_input_data = np.load('./Datasets/TTC/721124multi-systems_TTC_pure_mirrored_250000.npy') , np.load('./Datasets/TTC/721124multi-systems_TTC_noisy_mirrored_250000.npy')
 #ttc_output_data, ttc_input_data = ttc_dg.generate_random_set(10000, 'multi-systems', 100, 0.5,4 ,0.9,save_data=True)
-ttc_output_data, ttc_input_data = ttc_dg.new_data_set_generator(6000,35)
+ttc_output_data, ttc_input_data = ttc_dg.generate_random_set(2,dynamics_type='aging', save_data=False)
+
+fig, ax = plt.subplots(2, 6, figsize=(16, 4))
+idx = 0
+g_t = ttc_output_data[idx]
+
+ncc = []
+for h in range(2):
+    for v in range(6):
+        
+        
+        if h == 0 and v == 0:
+            d_i = g_t
+        else:
+          d_i = ttc_input_data[idx]  
+        
+        
+        ax[h][v].imshow( d_i  , cmap='jet', origin='lower', 
+                  aspect='auto')
+        ax[h][v].set_xticks([])
+        ax[h][v].set_yticks([])
+        idx = idx + 1
+        
+        ncc.append(normalized_cross_correlation(g_t, d_i))
+        
+plt.tight_layout()
+plt.show()  
+fig.savefig(f'datasample_ms{idx}.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
+      
+
+
+fig2 = plt.figure(figsize=(8, 5))
+plt.plot(range(len(ncc)), ncc, marker='o', linestyle='-', linewidth=2)
+
+#plt.title(title, fontsize=14)
+plt.xlabel("Noise Factor", fontsize=12)
+plt.ylabel("Normalized Cross-Correlation (NCC)", fontsize=12)
+
+plt.ylim(0, 1.05)
+
+
+plt.grid(True, which='both', linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
+fig2.savefig(f'datasample_ncc_ms{idx}.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
+
+
+
+idx = 150
+fig, ax = plt.subplots(2, 2, figsize=(16, 16))
+   
+ax[0][0].imshow( ttc_output_data[idx]  , cmap='plasma', origin='lower', 
+         extent=[0, 10, 0, 10], aspect='auto')
+ax[0][0].set_xlabel('$t_1$')
+ax[0][0].set_ylabel('$t_2$')
+
+ax[0][1].imshow(ttc_input_data[idx], cmap='plasma', origin='lower', 
+         extent=[0, 10, 0, 10], aspect='auto')
+ax[0][1].set_xlabel('$t_1$')
+ax[0][1].set_ylabel('$t_2$')
+   
+ax[1][0].imshow(ttc_input_data[idx+4], cmap='plasma', origin='lower', 
+         extent=[0, 10, 0, 10], aspect='auto')
+ax[1][0].set_xlabel('$t_1$')
+ax[1][0].set_ylabel('$t_2$')
+
+ax[1][1].imshow(ttc_input_data[idx+15], cmap='plasma', origin='lower', 
+         extent=[0, 10, 0, 10], aspect='auto')
+ax[1][1].set_xlabel('$t_1$')
+ax[1][1].set_ylabel('$t_2$') 
+plt.tight_layout()
+
+fig.savefig(f'datasample{idx}.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
+
+plt.show()
+
+nf = np.linspace(0.01,0.9,36)
+n_ou,n_in = ttc_dg.generate_random_set(1) 
+ncc_after = []
+ncc_before = []
+for k in range(n_in.shape[0]):
+    C_t_d = gaussian_filter(n_in[k], sigma=1.0)
+    ncc_after.append(normalized_cross_correlation(C_t_d, n_ou[0]))
+    if k == 0: 
+        ncc_before.append(normalized_cross_correlation(n_in[k], n_in[0]))
+    else:   
+        ncc_before.append(normalized_cross_correlation(n_in[k], n_ou[0]))
+    
+
+fig2 = plt.figure(figsize=(8, 5))
+#plt.plot(nf, ncc_after, marker='o', linewidth=2, label='After Gaussian Smoothing')
+#plt.plot(nf, ncc_before, marker='o', linewidth=2, label='Original')
+plt.plot(nf, np.array(ncc_after)-np.array(ncc_before), marker='o', linewidth=2, label='Enhancement Factor', c='green')
+
+#plt.title(title, fontsize=14)
+plt.xlabel("Noise Factor", fontsize=16)
+plt.ylabel("Normalized Cross-Correlation (NCC)", fontsize=16)
+plt.legend(fontsize=14)
+plt.ylim(0, 1.05)
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+
+plt.grid(True, which='both', linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
+fig2.savefig('GS_Normal.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
+
+#idx = 1
+fig, ax = plt.subplots(2, 6, figsize=(16, 4))
+idx = 0
+for h in range(2):
+    for v in range(6):
+        
+        
+        if h == 0 and v == 0:
+            d_i = n_ou[idx]
+        else:
+          d_i = n_in[idx-1]  
+        
+        
+        ax[h][v].imshow( d_i  , cmap='plasma', origin='lower', 
+                  aspect='auto')
+        ax[h][v].set_xticks([])
+        ax[h][v].set_yticks([])
+        idx = idx + 1
+
+plt.tight_layout()
+plt.show()  
+fig.savefig(f'datasample_n{idx}.png', dpi=300, bbox_inches='tight', transparent=True,format='png')
+      
+#ax[0][0].set_xlabel('$t_1$')
+#ax[0][0].set_ylabel('$t_2$')
+
+ax[0][1].imshow(n_in[idx], cmap='plasma', origin='lower', 
+          aspect='auto')
+ax[0][1].set_xticks([])
+ax[0][1].set_yticks([])
+   
+ax[1][0].imshow(n_in[idx+2], cmap='plasma', origin='lower', 
+          aspect='auto')
+ax[1][0].set_xticks([])
+ax[1][0].set_yticks([])
+
+ax[1][1].imshow(n_in[idx+4], cmap='plasma', origin='lower', 
+          aspect='auto')
+ax[1][1].set_xticks([])
+ax[1][1].set_yticks([])
+
+
+plt.tight_layout()
+
+
+plt.show()
+
+
+for i in range(10):
+    random_number = np.random.randint(1, 3001)
+    print(random_number)
+
+
 ttc_cnn = TTCCNN()
 cnn_model = ttc_cnn.build_model(input_shape=(100,100,1))
 history, model_name = ttc_cnn.fit_model(cnn_model, ttc_input_data, ttc_output_data, 15, 32, 0.2, save_model=True)

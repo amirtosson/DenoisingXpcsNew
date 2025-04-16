@@ -29,12 +29,12 @@ class TTCDataGenerator:
                             dynamics_type='normal',  
                             number_of_time_points=100, 
                             beta = 0.5,
-                            alpha = 5,
-                            tau = 1.0, 
+                            alpha = 1,
+                            tau = .7, 
                             save_data=True):
         I_beam = 1e12
         mu_abs = 0.139
-        absorber_thickness_cm = range(10,11,2)
+        absorber_thickness_cm = range(1,37,1)
         C = np.zeros((number_of_time_points, number_of_time_points))
         output_images_size = number_of_images*len(absorber_thickness_cm)
         
@@ -42,15 +42,15 @@ class TTCDataGenerator:
         noisy_images = np.zeros_like(pure_images)
         for img in range(0,output_images_size, len(absorber_thickness_cm)):
             t = np.linspace(0, random.randint(1, 10), number_of_time_points) 
-            alpha = random.uniform(0.2, 0.3)
+            #alpha = random.uniform(0.2, 0.3)
             alpha_2 = 0#random.uniform(0.5, 1.0)
-            tau = random.uniform(60.5, 60.9)
+            #tau = random.uniform(60.5, 60.9)
             tau_2 = random.uniform(19.0, 20.9)
 
             beta = random.uniform(0.2, 0.3)
             beta_2 = random.uniform(0.5, 0.6)
 
-            average_photons_per_frame = calculate_transmitted_flux(I_beam, mu_abs, 2)
+            average_photons_per_frame =4 #calculate_transmitted_flux(I_beam, mu_abs, 2)
             noise_mask = np.random.poisson(average_photons_per_frame, size= (number_of_time_points,number_of_time_points))
             noise_mask = (noise_mask - np.min(noise_mask)) / (np.max(noise_mask) - np.min(noise_mask))
             
